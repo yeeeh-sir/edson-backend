@@ -62,8 +62,8 @@ async function getDashboard(req, res, next) {
       `SELECT DATE(created_at) AS day, COUNT(*) AS orders, COALESCE(SUM(total), 0) AS revenue
        FROM orders
        WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
-       GROUP BY DAY(created_at)
-       ORDER BY day ASC`
+       GROUP BY DATE(created_at)
+       ORDER BY DATE(created_at) ASC`
     );
 
     const [categoryRows] = await pool.query(

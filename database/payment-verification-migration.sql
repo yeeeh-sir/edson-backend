@@ -1,0 +1,27 @@
+-- Payment verification workflow. Safe to run repeatedly.
+CREATE TABLE IF NOT EXISTS payment_submissions (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  order_id INT NOT NULL,
+  user_id INT NOT NULL,
+  amount DECIMAL(12,2) NOT NULL,
+  payment_method VARCHAR(50) NOT NULL,
+  payment_number VARCHAR(30) NULL,
+  transaction_reference VARCHAR(150) NULL,
+  screenshot_url VARCHAR(500) NOT NULL,
+  screenshot_public_id VARCHAR(255) NULL,
+  customer_note TEXT NULL,
+  status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+  admin_note TEXT NULL,
+  reviewed_by INT NULL,
+  reviewed_at TIMESTAMP NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_payment_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_payment_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_payment_reviewer FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  UNIQUE KEY uniq_pending_payment_order (order_id),
+  INDEX idx_payment_user (user_id),
+  INDEX idx_payment_order (order_id),
+  INDEX idx_payment_status (status),
+  INDEX idx_payment_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

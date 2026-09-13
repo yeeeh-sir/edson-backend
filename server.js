@@ -46,20 +46,34 @@ const contactLimiter = rateLimit({
 
 app.use(helmet());
 
-// Allow the configured frontend origin(s). FRONTEND_URL accepts a comma-separated
-// list so both local development and the Render frontend can talk to this API.
-const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:3000')
-  .split(',')
-  .map((s) => s.trim())
-  .filter(Boolean);
+// CORS - allow the Edson Shop frontends and local development.
+// `FRONTEND_URL` (env) can add extra origins (comma-separated) if needed.
+const DEFAULT_ALLOWED_ORIGINS = [
+  'https://edson-shop-1kvgwqmgc-yeeh-sir.vercel.app',
+  'https://edson-shop-mu.vercel.app',
+  'http://localhost:3000',
+];
+
+const allowedOrigins = new Set([
+  ...DEFAULT_ALLOWED_ORIGINS,
+  ...(process.env.FRONTEND_URL || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean),
+]);
 
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+      // Allow requests with no Origin header (curl, server-to-server) and
+      // any explicitly allowed origin. Never use "*" with credentials.
+      if (!origin || allowedOrigins.has(origin)) return callback(null, true);
       return callback(null, false);
     },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+    maxAge: 86400,
   })
 );
 

@@ -46,9 +46,19 @@ const contactLimiter = rateLimit({
 
 app.use(helmet());
 
+// Allow the configured frontend origin(s). FRONTEND_URL accepts a comma-separated
+// list so both local development and the Render frontend can talk to this API.
+const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:3000')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(null, false);
+    },
     credentials: true,
   })
 );
@@ -98,7 +108,8 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-const server = app.listen(PORT, () => {
+// Bind to 0.0.0.0 so Render (and any host) can reach the API.
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
 

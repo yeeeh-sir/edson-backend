@@ -67,6 +67,8 @@ async function verifyGoogleCredential(credential) {
         const meta = decodeSafeMetadata(credential);
         console.error('[Google verification failed]', JSON.stringify({
             reason,
+            errorName: err.name,
+            audience: process.env.GOOGLE_CLIENT_ID,
             serverNow: Math.floor(Date.now() / 1000),
             metadata: meta,
         }));

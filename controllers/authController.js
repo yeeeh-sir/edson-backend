@@ -41,7 +41,7 @@ async function googleLogin(req, res, next) {
     return res.json({
       success: true,
       message: 'Google login successful',
-      data: { user },
+      data: { user, token },
     });
   } catch (err) {
     return next(err);

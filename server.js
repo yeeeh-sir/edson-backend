@@ -122,6 +122,19 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
+// Log the initial database connection status once at startup.
+// Errors are logged (with the sanitised detail) but do NOT crash the server;
+// the running state remains observable via GET /api/health.
+async function announceDatabaseStatus() {
+  try {
+    await testConnection();
+    console.log(`[db] Connected to MySQL "${process.env.DB_NAME || 'edson_shop'}" (SSL ${process.env.DB_SSL ? 'enabled' : 'disabled'}). /api/health -> database: connected`);
+  } catch {
+    console.error('[db] Initial connection failed. The API is still running, but GET /api/health will report database: disconnected until the database is reachable.');
+  }
+}
+announceDatabaseStatus();
+
 // Bind to 0.0.0.0 so Render (and any host) can reach the API.
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);

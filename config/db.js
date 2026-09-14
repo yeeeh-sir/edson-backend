@@ -10,6 +10,17 @@ function envBool(value, fallback = false) {
   return ['1', 'true', 'yes', 'on'].includes(String(value).toLowerCase());
 }
 
+/*
+ * Render / shell hosts often store a PEM CA certificate as a single-line
+ * environment variable where the line breaks are literal `\n` sequences.
+ * Convert them back to real newlines so Node's TLS parser accepts the cert.
+ */
+function normalizeCa(raw) {
+  const value = String(raw || '').trim();
+  if (!value) return '';
+  return value.replace(/\\n/g, '\n').trim();
+}
+
 /* ------------------------------------------------------------------ */
 /*  Sanitised error messages (never include the password)               */
 /* ------------------------------------------------------------------ */
@@ -26,8 +37,10 @@ function describeConnectionError(error) {
   let hint = '';
   if (error && (error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED')) {
     hint = ' — is DB_HOST / DB_PORT reachable from this environment?';
-  } else if (error && /ssl/i.test(String(error.message))) {
-    hint = ' — check DB_SSL / DB_SSL_CA / DB_SSL_CA_PATH settings.';
+  } else if (error && /ssl|self[- ]signed|certificate|handshake/i.test(String(error.message))) {
+    hint =
+      ' — TLS/SSL failure. Verify DB_SSL_CA contains the full Aiven CA certificate' +
+      ' (if stored as one line, newlines must be escaped as \\n) or point DB_SSL_CA_PATH at the .pem file.';
   }
 
   return `[db] connection error: ${safe} (host=${host}, port=${port}, database=${database})${hint}`;
@@ -60,7 +73,7 @@ function buildSslConfig() {
   const ssl = { rejectUnauthorized };
 
   // CA certificate: prefer inline PEM from env var, fall back to file path.
-  const caInline = (process.env.DB_SSL_CA || '').trim();
+  const caInline = normalizeCa(process.env.DB_SSL_CA);
   const caPath = (process.env.DB_SSL_CA_PATH || '').trim();
 
   let ca;
@@ -74,7 +87,13 @@ function buildSslConfig() {
     }
   }
 
-  if (ca) ssl.ca = ca;
+  if (ca) {
+    ssl.ca = ca;
+  } else if (rejectUnauthorized) {
+    console.warn(
+      '[db] WARNING: SSL is enabled but no CA certificate was provided (DB_SSL_CA / DB_SSL_CA_PATH). Server certificate verification will likely fail.'
+    );
+  }
 
   return ssl;
 }

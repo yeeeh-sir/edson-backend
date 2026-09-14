@@ -35,8 +35,14 @@ async function getPaymentScreenshot(req, res, next) {
             return res.status(404).json({ success: false, message: 'Payment screenshot not found' });
         }
         const url = rows[0].screenshot_url;
+        // Payment screenshots are stored in Cloudinary (never web-host static files).
+        // Redirect straight to the secure Cloudinary URL so the image is served by CDN.
         if (/^https?:\/\//i.test(url) && !url.includes('/uploads/')) return res.redirect(url);
-        return res.sendFile(path.join(uploadsDir, path.basename(url)));
+        // Legacy/development records pointing at local /uploads are served only outside production.
+        if (process.env.NODE_ENV !== 'production' && url) {
+            return res.sendFile(path.join(uploadsDir, path.basename(url)));
+        }
+        return res.status(404).json({ success: false, message: 'Payment screenshot not available' });
     } catch (err) { return next(err); }
 }
 

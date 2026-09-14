@@ -3,7 +3,7 @@ const { body } = require('express-validator');
 const paymentController = require('../controllers/paymentController');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { adminMiddleware } = require('../middleware/adminMiddleware');
-const { uploadSingle } = require('../middleware/uploadMiddleware');
+const { uploadSingleMemory } = require('../middleware/uploadMiddleware');
 const { runValidation } = require('../utils/validation');
 
 const router = express.Router();
@@ -11,7 +11,7 @@ const router = express.Router();
 router.post(
     '/submit',
     authMiddleware,
-    uploadSingle('screenshot'),
+    uploadSingleMemory('screenshot'),
     [
         body('items').notEmpty().withMessage('Order items are required'),
         body('full_name').trim().notEmpty().withMessage('Full name is required'),

@@ -1,7 +1,7 @@
 const { pool } = require('../config/db');
 const { AppError } = require('../middleware/errorMiddleware');
 const { generateOrderNumber } = require('../utils/generateOrderNumber');
-const { storeImage, deleteImage } = require('./imageService');
+const { storeImageBuffer, deleteImage } = require('./imageService');
 
 const ORDER_FIELDS = `
   o.id, o.user_id, o.order_number, o.full_name, o.phone, o.email, o.address, o.city, o.country,
@@ -35,7 +35,7 @@ async function getPayment(id, user, isAdmin) {
     return {
         ...payment,
         id: payment.payment_id,
-        screenshot_url: `/api/payments/${payment.payment_id}/screenshot`,
+        screenshot_url: payment.screenshot_url,
         created_at: payment.payment_created_at,
         updated_at: payment.payment_updated_at,
         items,
@@ -55,7 +55,11 @@ async function submitPayment(user, payload, file) {
     }
     if (!Array.isArray(items) || !items.length) throw new AppError('At least one order item is required', 400);
 
-    const uploaded = await storeImage(file, { folder: 'payment-screenshots' });
+    // Upload the screenshot (memory buffer) to Cloudinary before creating the order.
+    // No temporary file is written to disk; the screenshot lives only in Cloudinary.
+    const uploaded = await storeImageBuffer(file.buffer, file.originalname, file.mimetype, {
+        folder: 'payment-screenshots',
+    });
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
@@ -133,7 +137,7 @@ async function listPayments(user, isAdmin, params = {}) {
      LEFT JOIN order_items oi ON oi.order_id = o.id
      ${whereSql} GROUP BY ps.id ORDER BY ps.created_at DESC LIMIT ?`, [...values, limit]
     );
-    return { payments: rows.map((payment) => ({ ...payment, screenshot_url: `/api/payments/${payment.id}/screenshot` })) };
+    return { payments: rows.map((payment) => ({ ...payment, screenshot_url: payment.screenshot_url })) };
 }
 
 async function reviewPayment(paymentId, admin, approved, adminNote) {

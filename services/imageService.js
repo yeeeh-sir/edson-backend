@@ -114,6 +114,59 @@ async function storeImage(file, opts = {}) {
   return uploadToLocal(file);
 }
 
+/**
+ * Upload a buffer (in-memory file) directly to Cloudinary.
+ * No temporary files are written to disk — ideal for payment screenshots
+ * on Render where filesystem storage should be avoided.
+ *
+ * @param {Buffer} buffer - file content
+ * @param {string} originalname - original filename (used for public_id naming only)
+ * @param {string} mimetype - MIME type (e.g. 'image/jpeg')
+ * @param {object} [opts] - { folder } one of FOLDERS keys
+ */
+async function storeImageBuffer(buffer, originalname, mimetype, opts = {}) {
+  if (!buffer || !buffer.length) {
+    return { url: null, publicId: null, storage: null };
+  }
+
+  if (!isConfigured()) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new AppError('Image upload is temporarily unavailable. Please try again later.', 502);
+    }
+    throw new AppError('Image upload requires Cloudinary configuration', 500);
+  }
+
+  const folder = resolveFolder(opts.folder);
+  const ext = path.extname(originalname || '').toLowerCase() || ALLOWED_MIME_EXT[mimetype] || '.jpg';
+  const publicId = `upload-${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+
+  const options = {
+    folder,
+    resource_type: 'image',
+    public_id: publicId,
+    overwrite: false,
+  };
+
+  const transformation = TRANSFORMATIONS[opts.folder];
+  if (transformation) options.transformation = transformation;
+
+  // Upload via Promise wrapper for cleaner async/await usage.
+  const uploadResult = await new Promise((resolve, reject) => {
+    cloudinary.uploader.upload_stream(options, (error, result) => {
+      if (error) return reject(error);
+      resolve(result);
+    }).end(buffer);
+  });
+
+  return { url: uploadResult.secure_url, publicId: uploadResult.public_id, storage: 'cloudinary' };
+}
+
+const ALLOWED_MIME_EXT = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp',
+};
+
 async function storeImages(files, opts = {}) {
   if (!Array.isArray(files) || files.length === 0) return [];
   const results = [];
@@ -156,6 +209,7 @@ async function deleteImage(publicId, url) {
 
 module.exports = {
   storeImage,
+  storeImageBuffer,
   storeImages,
   deleteImage,
   isConfigured,

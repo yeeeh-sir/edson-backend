@@ -13,6 +13,8 @@ const ALLOWED_MIME_TYPES = {
   'image/webp': '.webp',
 };
 
+const ALLOWED_MIME_SET = new Set(Object.keys(ALLOWED_MIME_TYPES));
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadsDir),
   filename: (req, file, cb) => {
@@ -38,9 +40,20 @@ const upload = multer({
   fileFilter,
 });
 
+// Memory storage: file lives in req.file.buffer, never touches disk.
+// Used for payment screenshots so no temporary files land on Render's filesystem.
+const memoryStorage = multer.memoryStorage();
+const memoryUpload = multer({
+  storage: memoryStorage,
+  limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+  fileFilter,
+});
+
 module.exports = {
   upload,
   uploadSingle: (field) => upload.single(field),
   uploadArray: (field, maxCount = 8) => upload.array(field, maxCount),
+  uploadSingleMemory: (field) => memoryUpload.single(field),
   uploadsDir,
+  ALLOWED_MIME_SET,
 };

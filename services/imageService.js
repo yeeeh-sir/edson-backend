@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { cloudinary, isConfigured } = require('../config/cloudinary');
+const { cloudinary, isConfigured, missingCloudinaryVars } = require('../config/cloudinary');
 const { uploadsDir } = require('../middleware/uploadMiddleware');
 const { AppError } = require('../middleware/errorMiddleware');
 
@@ -42,6 +42,21 @@ function localFileUrl(filename) {
  */
 function resolveFolder(type) {
   return FOLDERS[type] || ROOT_FOLDER;
+}
+
+/**
+ * Build a safe, actionable production error naming the missing env vars
+ * (variable names only — never their values) and log it server-side.
+ */
+function cloudinaryMissingError() {
+  const missing = missingCloudinaryVars();
+  console.error(
+    `[imageService] Cloudinary is not configured. Missing environment variable(s): ${missing.join(', ')}`
+  );
+  return new AppError(
+    `Cloudinary configuration is missing (${missing.join(', ')}). Contact the store administrator.`,
+    502
+  );
 }
 
 /**
@@ -114,10 +129,7 @@ async function storeImage(file, opts = {}) {
       console.warn('[imageService] Using local fallback after Cloudinary failure:', err.message);
     }
   } else if (process.env.NODE_ENV === 'production') {
-    console.error(
-      '[imageService] Cloudinary is not configured (expected CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET)'
-    );
-    throw new AppError('Cloudinary configuration is missing. Contact the store administrator.', 502);
+    throw cloudinaryMissingError();
   }
 
   return uploadToLocal(file);
@@ -140,10 +152,7 @@ async function storeImageBuffer(buffer, originalname, mimetype, opts = {}) {
 
   if (!isConfigured()) {
     if (process.env.NODE_ENV === 'production') {
-      console.error(
-        '[imageService] Cloudinary is not configured (expected CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET)'
-      );
-      throw new AppError('Cloudinary configuration is missing. Contact the store administrator.', 502);
+      throw cloudinaryMissingError();
     }
     throw new AppError('Image upload requires Cloudinary configuration', 500);
   }

@@ -175,4 +175,21 @@ async function reviewPayment(paymentId, admin, approved, adminNote) {
     } finally { conn.release(); }
 }
 
-module.exports = { submitPayment, listPayments, getPayment, reviewPayment };
+/**
+ * Delete a payment submission (admin).
+ * Removes the Cloudinary screenshot and the database record.
+ */
+async function deletePayment(id) {
+    const [rows] = await pool.query('SELECT * FROM payment_submissions WHERE id = ?', [id]);
+    if (!rows.length) throw new AppError('Payment not found', 404);
+    const payment = rows[0];
+
+    if (payment.screenshot_public_id || payment.screenshot_url) {
+        await deleteImage(payment.screenshot_public_id, payment.screenshot_url);
+    }
+
+    await pool.query('DELETE FROM payment_submissions WHERE id = ?', [id]);
+    return { id: Number(id), orderId: payment.order_id };
+}
+
+module.exports = { submitPayment, listPayments, getPayment, reviewPayment, deletePayment };

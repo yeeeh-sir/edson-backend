@@ -46,7 +46,7 @@ const contactLimiter = rateLimit({
 
 app.use(helmet());
 
-// CORS - allow the Edson Shop frontends and local development.
+// CORS - allow the Edison Shop frontends and local development.
 // `FRONTEND_URL` (env) can add extra origins (comma-separated) if needed.
 const DEFAULT_ALLOWED_ORIGINS = [
   'https://edson-shop-1kvgwqmgc-yeeh-sir.vercel.app',
@@ -90,13 +90,13 @@ app.get('/api/health', async (req, res) => {
     await testConnection();
     return res.json({
       success: true,
-      message: 'Edson Shop API is running',
+      message: 'Edison Shop API is running',
       database: 'connected',
     });
   } catch (err) {
     return res.status(500).json({
       success: false,
-      message: 'Edson Shop API is running',
+      message: 'Edison Shop API is running',
       database: 'disconnected',
     });
   }

@@ -1,7 +1,7 @@
 {
   "name": "edson-backend",
   "version": "1.0.0",
-  "description": "Edson Shop REST API - Node.js + Express + MySQL",
+  "description": "Edison Shop REST API - Node.js + Express + MySQL",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -16,7 +16,7 @@
     "mysql",
     "api"
   ],
-  "author": "Edson Shop",
+  "author": "Edison Shop",
   "license": "MIT",
   "dependencies": {
     "bcryptjs": "^2.4.3",

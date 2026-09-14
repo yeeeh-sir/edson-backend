@@ -62,4 +62,12 @@ async function rejectPayment(req, res, next) {
     } catch (err) { return next(err); }
 }
 
-module.exports = { submitPayment, listPayments, getPayment, getPaymentScreenshot, approvePayment, rejectPayment };
+async function deletePayment(req, res, next) {
+    try {
+        const deleted = await paymentService.deletePayment(req.params.id);
+        await logAdminActivity(req, 'PAYMENT_DELETE', 'payment', deleted.id, `Deleted payment history ${deleted.id} (order ${deleted.orderId})`);
+        return res.json({ success: true, message: 'Payment deleted', data: deleted });
+    } catch (err) { return next(err); }
+}
+
+module.exports = { submitPayment, listPayments, getPayment, getPaymentScreenshot, approvePayment, rejectPayment, deletePayment };

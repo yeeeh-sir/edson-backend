@@ -1,5 +1,5 @@
 -- ============================================================
--- Edson Shop - Database schema
+-- Edison Shop - Database schema
 -- Database: edson_shop
 -- Safe to run repeatedly: existing tables are preserved,
 -- only missing tables are created (CREATE TABLE IF NOT EXISTS).

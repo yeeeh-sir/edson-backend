@@ -1,11 +1,11 @@
--- Edson Shop category data migration
+-- Edison Shop category data migration
 -- Safe to run repeatedly. It inserts missing catalogue categories only.
 -- Existing users, products, orders, and other records are preserved.
 
 INSERT IGNORE INTO categories (name, slug, description, image, status) VALUES
   ('Electronics', 'electronics', 'Phones, tablets, computers, audio and smart devices', NULL, 'active'),
   ('Stationery', 'stationery', 'Notebooks, writing tools and office essentials', NULL, 'active'),
-  ('Graphics', 'graphics', 'Design and print services available in the Edson studio', NULL, 'active'),
+  ('Graphics', 'graphics', 'Design and print services available in the Edison studio', NULL, 'active'),
   ('Others', 'others', 'Gifts, lifestyle and home items', NULL, 'active');
 
 INSERT IGNORE INTO subcategories (category_id, name, slug, description, status) VALUES

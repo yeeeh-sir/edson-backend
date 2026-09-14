@@ -1,5 +1,5 @@
 -- ============================================================
--- Edson Shop - Cloudinary integration
+-- Edison Shop - Cloudinary integration
 -- Adds public_id columns used to track/manage Cloudinary assets
 -- and the banners table used for homepage banner management.
 -- Safe to run repeatedly: column adds are guarded, table uses

@@ -1,6 +1,7 @@
 const { pool } = require('../config/db');
 const { AppError } = require('../middleware/errorMiddleware');
 const { VALID_USER_STATUSES, isIn } = require('../utils/validation');
+const imageService = require('../services/imageService');
 
 async function logAdminActivity(req, action, entityType, entityId, description) {
   if (!req.user || req.user.role !== 'admin' || !req.user.id) return;
@@ -244,10 +245,45 @@ async function updateUserStatus(req, res, next) {
   }
 }
 
+async function deleteUser(req, res, next) {
+  try {
+    const [rows] = await pool.query(
+      'SELECT id, role, profile_image, profile_image_public_id FROM users WHERE id = ?',
+      [req.params.id]
+    );
+    if (!rows.length) throw new AppError('User not found', 404);
+    const target = rows[0];
+
+    if (target.role !== 'customer') {
+      return res.status(400).json({ success: false, message: 'Only customer accounts can be deleted' });
+    }
+    if (Number(target.id) === Number(req.user.id)) {
+      return res.status(400).json({ success: false, message: 'You cannot delete your own account' });
+    }
+
+    const [orderRows] = await pool.query('SELECT COUNT(*) AS total FROM orders WHERE user_id = ?', [target.id]);
+    if (Number(orderRows[0].total) > 0) {
+      return res.status(400).json({ success: false, message: 'This customer has order history and cannot be deleted' });
+    }
+
+    if (target.profile_image_public_id || target.profile_image) {
+      await imageService.deleteImage(target.profile_image_public_id, target.profile_image);
+    }
+    await pool.query('DELETE FROM users WHERE id = ?', [target.id]);
+
+    await logAdminActivity(req, 'USER_DELETE', 'user', target.id, `Deleted customer ${target.id}`);
+
+    return res.json({ success: true, message: 'Customer deleted', data: { id: target.id } });
+  } catch (err) {
+    return next(err);
+  }
+}
+
 module.exports = {
   logAdminActivity,
   getDashboard,
   listUsers,
   getUserById,
   updateUserStatus,
+  deleteUser,
 };

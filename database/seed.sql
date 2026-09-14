@@ -1,5 +1,5 @@
 -- ============================================================
--- Edson Shop - Seed data
+-- Edison Shop - Seed data
 -- Database: edson_shop
 -- Idempotent: uses INSERT IGNORE keyed on unique slugs/emails so
 -- it never duplicates or overwrites existing data.
@@ -23,7 +23,7 @@ WHERE email = 'admin@edson.shop' AND role = 'admin';
 
 INSERT IGNORE INTO users (full_name, email, phone, password, role, status)
 VALUES
-  ('Edson Shop Admin', 'admin@edsonshop.com', '+12500000001', '$2a$12$pXjcTm.HDqyV1FyNZ.yM8OwQaPU2ROBMeA99VcMQnLKGquPwcHws6', 'admin', 'active'),
+  ('Edison Shop Admin', 'admin@edsonshop.com', '+12500000001', '$2a$12$pXjcTm.HDqyV1FyNZ.yM8OwQaPU2ROBMeA99VcMQnLKGquPwcHws6', 'admin', 'active'),
   ('Demo Customer', 'customer@edson.shop', '+12500000002', NULL, 'customer', 'active');
 
 -- ------------------------------------------------------------
@@ -32,7 +32,7 @@ VALUES
 INSERT IGNORE INTO categories (name, slug, description, image, status) VALUES
   ('Electronics', 'electronics', 'Phones, tablets, computers, audio and smart devices', NULL, 'active'),
   ('Stationery', 'stationery', 'Notebooks, writing tools and office essentials', NULL, 'active'),
-  ('Graphics', 'graphics', 'Design and print services available in the Edson studio', NULL, 'active'),
+  ('Graphics', 'graphics', 'Design and print services available in the Edison studio', NULL, 'active'),
   ('Others', 'others', 'Gifts, lifestyle and home items', NULL, 'active');
 
 -- ------------------------------------------------------------

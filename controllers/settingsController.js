@@ -2,7 +2,7 @@ const { pool } = require('../config/db');
 const { AppError } = require('../middleware/errorMiddleware');
 
 const DEFAULTS = {
-    shopName: 'Edson Shop',
+    shopName: 'Edison Shop',
     tagline: 'Everything You Need, In One Shop',
     currency: 'RWF',
     deliveryFee: '5000',

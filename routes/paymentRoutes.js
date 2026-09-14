@@ -26,6 +26,7 @@ router.post(
 
 router.get('/my-payments', authMiddleware, paymentController.listPayments);
 router.get('/:id/screenshot', authMiddleware, paymentController.getPaymentScreenshot);
+router.get('/admin/payments', authMiddleware, adminMiddleware, paymentController.listPayments);
 router.get('/admin/list', authMiddleware, adminMiddleware, paymentController.listPayments);
 router.get('/admin/:id', authMiddleware, adminMiddleware, paymentController.getPayment);
 router.patch('/admin/:id/approve', authMiddleware, adminMiddleware, paymentController.approvePayment);

@@ -102,13 +102,22 @@ async function storeImage(file, opts = {}) {
     try {
       return await uploadToCloudinary(file, opts.folder);
     } catch (err) {
+      // Log the real upstream error server-side only; never echo it to the client.
+      console.error(
+        '[imageService] Cloudinary upload failed:',
+        err.message,
+        err.http_code ? `(http ${err.http_code})` : ''
+      );
       if (process.env.NODE_ENV === 'production') {
-        throw new AppError('Image upload is temporarily unavailable. Please try again later.', 502);
+        throw new AppError('Upload failed. Please try again.', 502);
       }
-      console.warn('[imageService] Cloudinary upload failed, using local fallback:', err.message);
+      console.warn('[imageService] Using local fallback after Cloudinary failure:', err.message);
     }
   } else if (process.env.NODE_ENV === 'production') {
-    throw new AppError('Image upload is temporarily unavailable. Please try again later.', 502);
+    console.error(
+      '[imageService] Cloudinary is not configured (expected CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET)'
+    );
+    throw new AppError('Cloudinary configuration is missing. Contact the store administrator.', 502);
   }
 
   return uploadToLocal(file);
@@ -131,7 +140,10 @@ async function storeImageBuffer(buffer, originalname, mimetype, opts = {}) {
 
   if (!isConfigured()) {
     if (process.env.NODE_ENV === 'production') {
-      throw new AppError('Image upload is temporarily unavailable. Please try again later.', 502);
+      console.error(
+        '[imageService] Cloudinary is not configured (expected CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET)'
+      );
+      throw new AppError('Cloudinary configuration is missing. Contact the store administrator.', 502);
     }
     throw new AppError('Image upload requires Cloudinary configuration', 500);
   }
@@ -150,15 +162,28 @@ async function storeImageBuffer(buffer, originalname, mimetype, opts = {}) {
   const transformation = TRANSFORMATIONS[opts.folder];
   if (transformation) options.transformation = transformation;
 
-  // Upload via Promise wrapper for cleaner async/await usage.
-  const uploadResult = await new Promise((resolve, reject) => {
-    cloudinary.uploader.upload_stream(options, (error, result) => {
-      if (error) return reject(error);
-      resolve(result);
-    }).end(buffer);
-  });
+  try {
+    // Upload via Promise wrapper for cleaner async/await usage.
+    const uploadResult = await new Promise((resolve, reject) => {
+      cloudinary.uploader.upload_stream(options, (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }).end(buffer);
+    });
 
-  return { url: uploadResult.secure_url, publicId: uploadResult.public_id, storage: 'cloudinary' };
+    return { url: uploadResult.secure_url, publicId: uploadResult.public_id, storage: 'cloudinary' };
+  } catch (err) {
+    // Log the real upstream error server-side only; never echo it to the client.
+    console.error(
+      '[imageService] Cloudinary buffer upload failed:',
+      err.message,
+      err.http_code ? `(http ${err.http_code})` : ''
+    );
+    if (process.env.NODE_ENV === 'production') {
+      throw new AppError('Upload failed. Please try again.', 502);
+    }
+    throw new AppError(`Image upload failed: ${err.message}`, 500);
+  }
 }
 
 const ALLOWED_MIME_EXT = {
